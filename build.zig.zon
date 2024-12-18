@@ -1,0 +1,17 @@
+.{
+    .name = "libexpat",
+    .version = "2.6.4",
+    .minimum_zig_version = "0.12.0",
+    .dependencies = .{
+        .libexpat = .{
+            .url = "git+https://github.com/libexpat/libexpat.git?ref=R_2_6_4#2691aff4304a6d7e053199c205620136481b9dd1",
+            .hash = "122023634c5939c209cbc4e27867707244abfd08d1234aeeda686fbe1a65435dd531",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "LICENSE",
+        "README.md",
+    },
+}
