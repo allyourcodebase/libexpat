@@ -7,6 +7,10 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const linkage = b.option(std.builtin.LinkMode, "linkage", "Link mode") orelse .static;
+    const strip = b.option(bool, "strip", "Omit debug information");
+    const pic = b.option(bool, "pie", "Produce Position Independent Code");
+
     // Most of these config options have not been tested.
 
     var context_bytes = b.option(i64, "context-bytes", "Define to specify how much context to retain around the current parse point, 0 to disable") orelse 1024;
@@ -59,7 +63,7 @@ pub fn build(b: *std.Build) void {
             .ios,
             .tvos,
             .watchos,
-            // .visionos, // not available on Zig 0.12
+            .visionos,
             => true,
             else => false,
         },
@@ -100,23 +104,27 @@ pub fn build(b: *std.Build) void {
         .off_t = null,
     });
 
-    const expat = b.addStaticLibrary(.{
+    const expat = b.addLibrary(.{
+        .linkage = linkage,
         .name = "expat",
-        .target = target,
-        .optimize = optimize,
-        .link_libc = true,
+        .root_module = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
+            .link_libc = true,
+            .strip = strip,
+            .pic = pic,
+        }),
     });
     b.installArtifact(expat);
-    expat.linkLibC();
-    expat.addConfigHeader(config_header);
+    expat.root_module.addConfigHeader(config_header);
     if (large_size) expat.root_module.addCMacro("XML_LARGE_SIZE", "1");
     if (min_size) expat.root_module.addCMacro("XML_MIN_SIZE", "1");
     if (char_type != .char) expat.root_module.addCMacro("XML_UNICODE", "1");
     if (char_type == .wchar_t) expat.root_module.addCMacro("XML_UNICODE_WCHAR_T", "1");
-    expat.addIncludePath(upstream.path("expat/lib"));
+    expat.root_module.addIncludePath(upstream.path("expat/lib"));
     expat.installHeader(upstream.path("expat/lib/expat.h"), "expat.h");
     expat.installHeader(upstream.path("expat/lib/expat_external.h"), "expat_external.h");
-    expat.addCSourceFiles(.{
+    expat.root_module.addCSourceFiles(.{
         .files = sources,
         .root = upstream.path("expat"),
         .flags = if (need_short_char_arg) &.{ "-std=c99", "-fshort-wchar" } else &.{"-std=c99"},
@@ -124,19 +132,24 @@ pub fn build(b: *std.Build) void {
 
     const xmlwf = b.addExecutable(.{
         .name = "xmlwf",
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
+            .link_libc = true,
+            .strip = strip,
+            .pic = pic,
+        }),
     });
-    xmlwf.addConfigHeader(config_header);
-    xmlwf.addIncludePath(upstream.path("expat/lib"));
+    xmlwf.root_module.addConfigHeader(config_header);
+    xmlwf.root_module.addIncludePath(upstream.path("expat/lib"));
     if (char_type != .char) xmlwf.root_module.addCMacro("XML_UNICODE", "1");
     if (char_type == .wchar_t) xmlwf.root_module.addCMacro("XML_UNICODE_WCHAR_T", "1");
-    xmlwf.addCSourceFiles(.{
+    xmlwf.root_module.addCSourceFiles(.{
         .files = xmlwf_sources,
         .root = upstream.path("expat"),
         .flags = if (need_short_char_arg) &.{"-fshort-wchar"} else &.{},
     });
-    xmlwf.linkLibrary(expat);
+    xmlwf.root_module.linkLibrary(expat);
 
     switch (char_type) {
         .char => {},
@@ -160,16 +173,21 @@ pub fn build(b: *std.Build) void {
     for (examples) |source| {
         const exe = b.addExecutable(.{
             .name = std.fs.path.stem(source),
-            .target = target,
-            .optimize = optimize,
+            .root_module = b.createModule(.{
+                .target = target,
+                .optimize = optimize,
+                .link_libc = true,
+                .strip = strip,
+                .pic = pic,
+            }),
         });
         if (char_type != .char) exe.root_module.addCMacro("XML_UNICODE", "1");
         if (char_type == .wchar_t) exe.root_module.addCMacro("XML_UNICODE_WCHAR_T", "1");
-        exe.addCSourceFile(.{
+        exe.root_module.addCSourceFile(.{
             .file = upstream.path(b.fmt("expat/{s}", .{source})),
             .flags = if (need_short_char_arg) &.{"-fshort-wchar"} else &.{},
         });
-        exe.linkLibrary(expat);
+        exe.root_module.linkLibrary(expat);
 
         examples_step.dependOn(&b.addInstallArtifact(exe, .{ .dest_dir = examples_dir }).step);
 
@@ -191,24 +209,28 @@ pub fn build(b: *std.Build) void {
 
         const test_exe = b.addExecutable(.{
             .name = name,
-            .target = target,
-            .optimize = optimize,
+            .root_module = b.createModule(.{
+                .target = target,
+                .optimize = optimize,
+                .link_libc = true,
+                .link_libcpp = link_cpp,
+                .strip = strip,
+                .pic = pic,
+            }),
         });
-        test_exe.linkLibC();
-        if (link_cpp) test_exe.linkLibCpp();
         test_exe.root_module.addCMacro("XML_TESTING", "1");
         if (char_type != .char) test_exe.root_module.addCMacro("XML_UNICODE", "1");
         if (char_type == .wchar_t) test_exe.root_module.addCMacro("XML_UNICODE_WCHAR_T", "1");
-        test_exe.addCSourceFiles(.{
+        test_exe.root_module.addCSourceFiles(.{
             .flags = flags.items,
             .root = upstream.path("expat"),
             .files = test_sources,
         });
-        test_exe.addConfigHeader(config_header);
-        test_exe.addIncludePath(upstream.path("expat/lib"));
+        test_exe.root_module.addConfigHeader(config_header);
+        test_exe.root_module.addIncludePath(upstream.path("expat/lib"));
         if (large_size) test_exe.root_module.addCMacro("XML_LARGE_SIZE", "1");
         if (min_size) test_exe.root_module.addCMacro("XML_MIN_SIZE", "1");
-        test_exe.addCSourceFiles(.{
+        test_exe.root_module.addCSourceFiles(.{
             .files = sources,
             .root = upstream.path("expat"),
             .flags = if (need_short_char_arg) &.{ "-std=c99", "-fshort-wchar" } else &.{"-std=c99"},
