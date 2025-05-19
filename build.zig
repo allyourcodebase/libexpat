@@ -44,6 +44,18 @@ pub fn build(b: *std.Build) void {
     b.getInstallStep().dependOn(&b.addInstallFileWithDir(upstream.path("expat/AUTHORS"), .prefix, "AUTHORS").step);
     b.getInstallStep().dependOn(&b.addInstallFileWithDir(upstream.path("expat/Changes"), .prefix, "changelog").step);
 
+    const has_getrandom: bool = switch (target.result.os.tag) {
+        .linux => if (target.result.isMuslLibC())
+            true
+        else if (target.result.isGnuLibC())
+            target.result.os.version_range.linux.glibc.order(.{ .major = 2, .minor = 25, .patch = 0 }) != .lt
+        else
+            unreachable,
+        .freebsd => target.result.os.isAtLeast(.freebsd, .{ .major = 12, .minor = 0, .patch = 0 }) orelse false,
+        .netbsd => target.result.os.isAtLeast(.netbsd, .{ .major = 10, .minor = 0, .patch = 0 }) orelse false,
+        else => false,
+    };
+
     const config_header = b.addConfigHeader(.{
         .style = .{ .cmake = upstream.path("expat/expat_config.h.cmake") },
         .include_path = "expat_config.h",
@@ -67,22 +79,19 @@ pub fn build(b: *std.Build) void {
             => true,
             else => false,
         },
-        .HAVE_DLFCN_H = true,
+        .HAVE_DLFCN_H = target.result.os.tag != .windows,
         .HAVE_FCNTL_H = true,
-        .HAVE_GETPAGESIZE = true,
-        .HAVE_GETRANDOM = switch (target.result.os.tag) {
-            .linux, .freebsd => true,
-            else => false,
-        },
+        .HAVE_GETPAGESIZE = target.result.os.tag.isBSD(),
+        .HAVE_GETRANDOM = has_getrandom,
         .HAVE_INTTYPES_H = true,
         .HAVE_LIBBSD = null,
         .HAVE_MEMORY_H = true,
-        .HAVE_MMAP = true,
+        .HAVE_MMAP = target.result.os.tag != .windows and target.result.os.tag != .wasi,
         .HAVE_STDINT_H = true,
         .HAVE_STDLIB_H = true,
         .HAVE_STRINGS_H = true,
         .HAVE_STRING_H = true,
-        .HAVE_SYSCALL_GETRANDOM = target.result.os.tag == .linux,
+        .HAVE_SYSCALL_GETRANDOM = has_getrandom,
         .HAVE_SYS_STAT_H = true,
         .HAVE_SYS_TYPES_H = true,
         .HAVE_UNISTD_H = true,
@@ -94,7 +103,7 @@ pub fn build(b: *std.Build) void {
         .PACKAGE_URL = "",
         .PACKAGE_VERSION = b.fmt("{}", .{version}),
         .STDC_HEADERS = true,
-        .WORDS_BIGENDIAN = null,
+        .WORDS_BIGENDIAN = target.result.cpu.arch.endian() == .big,
         .XML_ATTR_INFO = attr_info,
         .XML_CONTEXT_BYTES = context_bytes,
         .XML_DEV_URANDOM = target.result.os.tag != .windows,
