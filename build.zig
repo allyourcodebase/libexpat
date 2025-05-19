@@ -23,9 +23,9 @@ pub fn build(b: *std.Build) void {
     };
 
     const char_type = b.option(CharType, "char-type", "Character type to use. (default=char)") orelse .char;
-    const dtd = b.option(bool, "dtd", "Define to make parameter entity parsing functionality available") orelse false;
-    const ge = b.option(bool, "ge", "Define to make general entity parsing functionality available") orelse false;
-    const ns = b.option(bool, "ns", "Define to make XML Namespaces functionality available") orelse false;
+    const dtd = b.option(bool, "dtd", "Define to make parameter entity parsing functionality available") orelse true;
+    const ge = b.option(bool, "ge", "Define to make general entity parsing functionality available") orelse true;
+    const ns = b.option(bool, "ns", "Define to make XML Namespaces functionality available") orelse true;
     const attr_info = b.option(bool, "attr-info", "Define to allow retrieving the byte offsets for attribute names and values") orelse false;
     const large_size = b.option(bool, "large-size", "Make XML_GetCurrent* functions return <(unsigned) long long> rather than <(unsigned) long>") orelse false;
     const min_size = b.option(bool, "min-size", "Get a smaller (but slower) parser (in particular avoid multiple copies of the tokenizer)") orelse false;
