@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const version: std.SemanticVersion = .{ .major = 2, .minor = 6, .patch = 4 };
+const version: std.SemanticVersion = .{ .major = 2, .minor = 7, .patch = 1 };
 
 pub fn build(b: *std.Build) void {
     const upstream = b.dependency("libexpat", .{});
