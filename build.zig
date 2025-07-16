@@ -258,8 +258,10 @@ pub fn build(b: *std.Build) void {
 
     const benchmark = b.addExecutable(.{
         .name = "benchmark",
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
+        }),
     });
     if (char_type != .char) benchmark.root_module.addCMacro("XML_UNICODE", "1");
     if (char_type == .wchar_t) benchmark.root_module.addCMacro("XML_UNICODE_WCHAR_T", "1");
