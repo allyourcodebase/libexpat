@@ -11,7 +11,7 @@ First, update your `build.zig.zon`:
 ```
 # Initialize a `zig build` project if you haven't already
 zig init
-zig fetch --save git+https://github.com/allyourcodebase/libexpat.git#2.7.1
+zig fetch --save git+https://github.com/allyourcodebase/libexpat.git#2.7.1-1
 ```
 
 You can then import `expat` in your `build.zig` with:
