@@ -69,7 +69,6 @@ pub fn build(b: *std.Build) void {
             .dragonfly,
             .netbsd,
             .freebsd,
-            .solaris,
             .openbsd,
             .macos,
             .ios,
