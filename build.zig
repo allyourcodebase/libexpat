@@ -267,11 +267,11 @@ pub fn build(b: *std.Build) void {
     });
     if (char_type != .char) benchmark.root_module.addCMacro("XML_UNICODE", "1");
     if (char_type == .wchar_t) benchmark.root_module.addCMacro("XML_UNICODE_WCHAR_T", "1");
-    benchmark.addCSourceFile(.{
+    benchmark.root_module.addCSourceFile(.{
         .file = upstream.path("expat/tests/benchmark/benchmark.c"),
         .flags = if (need_short_char_arg) &.{"-fshort-wchar"} else &.{},
     });
-    benchmark.linkLibrary(expat);
+    benchmark.root_module.linkLibrary(expat);
 
     const run_benchmark_cmd = b.addRunArtifact(benchmark);
     if (b.args) |args| {
