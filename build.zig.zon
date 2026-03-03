@@ -1,6 +1,6 @@
 .{
     .name = .libexpat,
-    .version = "2.7.1-1",
+    .version = "2.7.1-2",
     .minimum_zig_version = "0.15.2",
     .dependencies = .{
         .libexpat = .{
