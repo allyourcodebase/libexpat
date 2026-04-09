@@ -214,7 +214,7 @@ pub fn build(b: *std.Build) void {
         [_][]const []const u8{ runtests_sources, runtests_cxx_sources },
         [_]bool{ false, true },
     ) |name, test_sources, link_cpp| {
-        var flags: std.ArrayListUnmanaged([]const u8) = .{};
+        var flags: std.ArrayList([]const u8) = .empty;
         if (link_cpp) flags.append(b.allocator, "-std=c++11") catch @panic("OOM");
         if (need_short_char_arg) flags.append(b.allocator, "-fshort-wchar") catch @panic("OOM");
 
