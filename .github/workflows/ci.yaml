@@ -17,7 +17,7 @@ jobs:
         zig-version: [master]
         os: [ubuntu-latest, macos-latest, windows-latest]
         include:
-          - zig-version: "0.16.0-dev.3133+5ec8e45f3"
+          - zig-version: latest
             os: ubuntu-latest
     runs-on: ${{ matrix.os }}
     steps:
