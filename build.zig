@@ -94,12 +94,10 @@ pub fn build(b: *std.Build) void {
         .HAVE_SYS_STAT_H = true,
         .HAVE_SYS_TYPES_H = true,
         .HAVE_UNISTD_H = true,
-        .PACKAGE = "expat",
         .PACKAGE_BUGREPORT = "https://github.com/libexpat/libexpat/issues",
         .PACKAGE_NAME = "expat",
         .PACKAGE_STRING = b.fmt("expat {f}", .{version}),
         .PACKAGE_TARNAME = "expat",
-        .PACKAGE_URL = "",
         .PACKAGE_VERSION = b.fmt("{f}", .{version}),
         .STDC_HEADERS = true,
         .WORDS_BIGENDIAN = target.result.cpu.arch.endian() == .big,
@@ -171,10 +169,7 @@ pub fn build(b: *std.Build) void {
     }
 
     const run_xmlwf_cmd = b.addRunArtifact(xmlwf);
-
-    if (b.args) |args| {
-        run_xmlwf_cmd.addArgs(args);
-    }
+    run_xmlwf_cmd.addPassthruArgs();
 
     const xmlwf_step = b.step("xmlwf", "run xmlwf");
     xmlwf_step.dependOn(&run_xmlwf_cmd.step);
@@ -252,9 +247,7 @@ pub fn build(b: *std.Build) void {
         }
 
         const run_test_cmd = b.addRunArtifact(test_exe);
-        if (b.args) |args| {
-            run_test_cmd.addArgs(args);
-        }
+        run_test_cmd.addPassthruArgs();
         test_step.dependOn(&run_test_cmd.step);
     }
 
@@ -274,9 +267,7 @@ pub fn build(b: *std.Build) void {
     benchmark.root_module.linkLibrary(expat);
 
     const run_benchmark_cmd = b.addRunArtifact(benchmark);
-    if (b.args) |args| {
-        run_benchmark_cmd.addArgs(args);
-    }
+    run_benchmark_cmd.addPassthruArgs();
 
     const benchmark_step = b.step("benchmark", "Run benchmark");
     benchmark_step.dependOn(&run_benchmark_cmd.step);
