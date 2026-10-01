@@ -1,6 +1,7 @@
 const std = @import("std");
 
-const version: std.SemanticVersion = .{ .major = 2, .minor = 7, .patch = 1 };
+const version = std.SemanticVersion.parse(@import("build.zig.zon").version) catch unreachable;
+const minimum_zig_version = std.SemanticVersion.parse(@import("build.zig.zon").minimum_zig_version) catch unreachable;
 
 pub fn build(b: *std.Build) void {
     const upstream = b.dependency("libexpat", .{});
@@ -83,7 +84,6 @@ pub fn build(b: *std.Build) void {
         .HAVE_GETPAGESIZE = target.result.os.tag.isBSD(),
         .HAVE_GETRANDOM = has_getrandom,
         .HAVE_INTTYPES_H = true,
-        .HAVE_LIBBSD = null,
         .HAVE_MEMORY_H = true,
         .HAVE_MMAP = target.result.os.tag != .windows and target.result.os.tag != .wasi,
         .HAVE_STDINT_H = true,
@@ -169,7 +169,13 @@ pub fn build(b: *std.Build) void {
     }
 
     const run_xmlwf_cmd = b.addRunArtifact(xmlwf);
-    run_xmlwf_cmd.addPassthruArgs();
+
+    comptime std.debug.assert(minimum_zig_version.order(.{ .major = 0, .minor = 17, .patch = 0 }) == .lt); // remove check below after updating to Zig 0.17.0+
+    if (@hasDecl(std.Build.Step.Run, "addPassthruArgs")) {
+        run_xmlwf_cmd.addPassthruArgs();
+    } else {
+        if (b.args) |args| run_xmlwf_cmd.addArgs(args);
+    }
 
     const xmlwf_step = b.step("xmlwf", "run xmlwf");
     xmlwf_step.dependOn(&run_xmlwf_cmd.step);
@@ -247,7 +253,12 @@ pub fn build(b: *std.Build) void {
         }
 
         const run_test_cmd = b.addRunArtifact(test_exe);
-        run_test_cmd.addPassthruArgs();
+        comptime std.debug.assert(minimum_zig_version.order(.{ .major = 0, .minor = 17, .patch = 0 }) == .lt); // remove check below after updating to Zig 0.17.0+
+        if (@hasDecl(std.Build.Step.Run, "addPassthruArgs")) {
+            run_test_cmd.addPassthruArgs();
+        } else {
+            if (b.args) |args| run_test_cmd.addArgs(args);
+        }
         test_step.dependOn(&run_test_cmd.step);
     }
 
@@ -267,7 +278,12 @@ pub fn build(b: *std.Build) void {
     benchmark.root_module.linkLibrary(expat);
 
     const run_benchmark_cmd = b.addRunArtifact(benchmark);
-    run_benchmark_cmd.addPassthruArgs();
+    comptime std.debug.assert(minimum_zig_version.order(.{ .major = 0, .minor = 17, .patch = 0 }) == .lt); // remove check below after updating to Zig 0.17.0+
+    if (@hasDecl(std.Build.Step.Run, "addPassthruArgs")) {
+        run_benchmark_cmd.addPassthruArgs();
+    } else {
+        if (b.args) |args| run_benchmark_cmd.addArgs(args);
+    }
 
     const benchmark_step = b.step("benchmark", "Run benchmark");
     benchmark_step.dependOn(&run_benchmark_cmd.step);

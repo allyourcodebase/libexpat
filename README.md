@@ -21,5 +21,5 @@ const expat_dependency = b.dependency("expat", .{
     .target = target,
     .optimize = optimize,
 });
-your_exe.linkLibrary(expat_dependency.artifact("expat"));
+your_exe.root_module.linkLibrary(expat_dependency.artifact("expat"));
 ```
