@@ -1,11 +1,11 @@
 .{
     .name = .libexpat,
-    .version = "2.8.5",
+    .version = "2.9.0",
     .minimum_zig_version = "0.16.0",
     .dependencies = .{
         .libexpat = .{
-            .url = "git+https://github.com/libexpat/libexpat.git?ref=R_2_8_5#4b3f0b06f39fb5529cead381694f8929901bc273",
-            .hash = "N-V-__8AAL2qHwhnrBN_y6blqkQ2FnvHT8vNBSKc9CFUo0Cf",
+            .url = "git+https://github.com/libexpat/libexpat.git?ref=R_2_9_0#a76b1174c1ea52abb639a4c69d52b630a8a106a2",
+            .hash = "N-V-__8AACC_IAjps5kqDDGfMj1QivQ1ve947H52K7D3PHsX",
         },
     },
     .paths = .{

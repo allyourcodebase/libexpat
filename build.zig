@@ -27,9 +27,6 @@ pub fn build(b: *std.Build) void {
     const dtd = b.option(bool, "dtd", "Define to make parameter entity parsing functionality available") orelse true;
     const ge = b.option(bool, "ge", "Define to make general entity parsing functionality available") orelse true;
     const ns = b.option(bool, "ns", "Define to make XML Namespaces functionality available") orelse true;
-    const attr_info = b.option(bool, "attr-info", "Define to allow retrieving the byte offsets for attribute names and values") orelse false;
-    const large_size = b.option(bool, "large-size", "Make XML_GetCurrent* functions return <(unsigned) long long> rather than <(unsigned) long>") orelse false;
-    const min_size = b.option(bool, "min-size", "Get a smaller (but slower) parser (in particular avoid multiple copies of the tokenizer)") orelse false;
 
     if (dtd and !ge) {
         std.log.err("Option `dtd` requires that `ge` is also enabled.", .{});
@@ -126,7 +123,6 @@ pub fn build(b: *std.Build) void {
         .PACKAGE_VERSION = b.fmt("{f}", .{version}),
         .STDC_HEADERS = true,
         .WORDS_BIGENDIAN = target.result.cpu.arch.endian() == .big,
-        .XML_ATTR_INFO = attr_info,
         .XML_CONTEXT_BYTES = context_bytes,
         .XML_DEV_URANDOM = xml_dev_urandom,
         .XML_DTD = dtd,
@@ -158,8 +154,6 @@ pub fn build(b: *std.Build) void {
     });
     b.installArtifact(expat);
     expat.root_module.addConfigHeader(config_header);
-    if (large_size) expat.root_module.addCMacro("XML_LARGE_SIZE", "1");
-    if (min_size) expat.root_module.addCMacro("XML_MIN_SIZE", "1");
     if (char_type != .char) expat.root_module.addCMacro("XML_UNICODE", "1");
     if (char_type == .wchar_t) expat.root_module.addCMacro("XML_UNICODE_WCHAR_T", "1");
     if (has_getentropy) expat.root_module.addCMacro("HAVE_GETENTROPY", "1");
@@ -269,8 +263,6 @@ pub fn build(b: *std.Build) void {
         });
         test_exe.root_module.addConfigHeader(config_header);
         test_exe.root_module.addIncludePath(upstream.path("expat/lib"));
-        if (large_size) test_exe.root_module.addCMacro("XML_LARGE_SIZE", "1");
-        if (min_size) test_exe.root_module.addCMacro("XML_MIN_SIZE", "1");
         test_exe.root_module.addCSourceFiles(.{
             .files = expat_sources.items,
             .root = upstream.path("expat"),
@@ -319,12 +311,14 @@ pub fn build(b: *std.Build) void {
 }
 
 const sources: []const []const u8 = &.{
+    "lib/xcs.c",
     "lib/xmlparse.c",
     "lib/xmlrole.c",
     "lib/xmltok.c",
 };
 
 const xmlwf_sources: []const []const u8 = &.{
+    "lib/xcs.c",
     "xmlwf/codepage.c",
     "xmlwf/readfilemap.c",
     "xmlwf/xmlfile.c",
@@ -351,6 +345,8 @@ const runtests_sources: []const []const u8 = &.{
     "tests/misc_tests.c",
     "tests/ns_tests.c",
     "tests/nsalloc_tests.c",
+    "tests/props_tests.c",
     "tests/runtests.c",
     "tests/structdata.c",
+    "tests/xcs_tests.c",
 };
