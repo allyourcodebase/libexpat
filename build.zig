@@ -150,10 +150,7 @@ pub fn build(b: *std.Build) void {
     expat.root_module.addCSourceFiles(.{
         .files = expat_sources.items,
         .root = upstream.path("expat"),
-        .flags = if (need_short_char_arg)
-            &.{ "-std=c99", "-fno-sanitize=undefined", "-fshort-wchar" }
-        else
-            &.{ "-std=c99", "-fno-sanitize=undefined" },
+        .flags = if (need_short_char_arg) &.{ "-std=c99", "-fshort-wchar" } else &.{"-std=c99"},
     });
 
     const xmlwf = b.addExecutable(.{
