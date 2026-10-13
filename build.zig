@@ -68,6 +68,10 @@ pub fn build(b: *std.Build) void {
         .watchos,
         .visionos,
         => true,
+        .linux => if (target.result.isGnuLibC())
+            target.result.os.version_range.linux.glibc.order(.{ .major = 2, .minor = 36, .patch = 0 }) != .lt
+        else
+            false,
         else => false,
     };
     const xml_dev_urandom = target.result.os.tag != .windows;
@@ -81,7 +85,7 @@ pub fn build(b: *std.Build) void {
             .big => 4321,
         }),
         .HAVE_ARC4RANDOM = null,
-        .HAVE_ARC4RANDOM_BUF = has_arc4random_buf,
+        .HAVE_ARC4RANDOM_BUF = if (has_arc4random_buf) true else null,
         .HAVE_DLFCN_H = target.result.os.tag != .windows,
         .HAVE_FCNTL_H = true,
         .HAVE_GETPAGESIZE = target.result.os.tag.isBSD(),
