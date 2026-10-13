@@ -210,22 +210,16 @@ pub fn build(b: *std.Build) void {
 
     const test_step = b.step("test", "Run unit tests");
 
-    for (
-        [_][]const u8{ "runtests", "runtests_cxx" },
-        [_][]const []const u8{ runtests_sources, runtests_cxx_sources },
-        [_]bool{ false, true },
-    ) |name, test_sources, link_cpp| {
+    {
         var flags: std.ArrayList([]const u8) = .empty;
-        if (link_cpp) flags.append(b.allocator, "-std=c++11") catch @panic("OOM");
         if (need_short_char_arg) flags.append(b.allocator, "-fshort-wchar") catch @panic("OOM");
 
         const test_exe = b.addExecutable(.{
-            .name = name,
+            .name = "runtests",
             .root_module = b.createModule(.{
                 .target = target,
                 .optimize = optimize,
                 .link_libc = true,
-                .link_libcpp = link_cpp,
                 .strip = strip,
                 .pic = pic,
             }),
@@ -236,7 +230,7 @@ pub fn build(b: *std.Build) void {
         test_exe.root_module.addCSourceFiles(.{
             .flags = flags.items,
             .root = upstream.path("expat"),
-            .files = test_sources,
+            .files = runtests_sources,
         });
         test_exe.root_module.addConfigHeader(config_header);
         test_exe.root_module.addIncludePath(upstream.path("expat/lib"));
@@ -316,6 +310,7 @@ const runtests_sources: []const []const u8 = &.{
     "tests/common.c",
     "tests/dummy.c",
     "tests/handlers.c",
+    "tests/hash_tests.c",
     "tests/memcheck.c",
     "tests/minicheck.c",
     "tests/misc_tests.c",
@@ -323,21 +318,4 @@ const runtests_sources: []const []const u8 = &.{
     "tests/nsalloc_tests.c",
     "tests/runtests.c",
     "tests/structdata.c",
-};
-
-const runtests_cxx_sources: []const []const u8 = &.{
-    "tests/acc_tests_cxx.cpp",
-    "tests/alloc_tests_cxx.cpp",
-    "tests/basic_tests_cxx.cpp",
-    "tests/chardata_cxx.cpp",
-    "tests/common_cxx.cpp",
-    "tests/dummy_cxx.cpp",
-    "tests/handlers_cxx.cpp",
-    "tests/memcheck_cxx.cpp",
-    "tests/minicheck_cxx.cpp",
-    "tests/misc_tests_cxx.cpp",
-    "tests/ns_tests_cxx.cpp",
-    "tests/nsalloc_tests_cxx.cpp",
-    "tests/runtests_cxx.cpp",
-    "tests/structdata_cxx.cpp",
 };
