@@ -56,6 +56,24 @@ pub fn build(b: *std.Build) void {
         .netbsd => target.result.os.isAtLeast(.netbsd, .{ .major = 10, .minor = 0, .patch = 0 }) orelse false,
         else => false,
     };
+    const has_getentropy: bool = switch (target.result.os.tag) {
+        .linux => if (target.result.isMuslLibC())
+            true
+        else if (target.result.isGnuLibC())
+            target.result.os.version_range.linux.glibc.order(.{ .major = 2, .minor = 25, .patch = 0 }) != .lt
+        else
+            unreachable,
+        .macos,
+        .ios,
+        .tvos,
+        .watchos,
+        .visionos,
+        => true,
+        .freebsd => target.result.os.isAtLeast(.freebsd, .{ .major = 12, .minor = 0, .patch = 0 }) orelse false,
+        .netbsd => target.result.os.isAtLeast(.netbsd, .{ .major = 10, .minor = 0, .patch = 0 }) orelse false,
+        .openbsd => target.result.os.isAtLeast(.freebsd, .{ .major = 5, .minor = 6, .patch = 0 }) orelse false,
+        else => false,
+    };
 
     const has_arc4random_buf = switch (target.result.os.tag) {
         .dragonfly,
@@ -123,7 +141,7 @@ pub fn build(b: *std.Build) void {
     // if (has_arc4random) expat_sources.append(b.allocator, "lib/random_arc4random.c") catch @panic("OOM"); // HAVE_ARC4RANDOM
     if (has_arc4random_buf) expat_sources.append(b.allocator, "lib/random_arc4random_buf.c") catch @panic("OOM");
     if (xml_dev_urandom) expat_sources.append(b.allocator, "lib/random_dev_urandom.c") catch @panic("OOM");
-    expat_sources.append(b.allocator, "lib/random_getentropy.c") catch @panic("OOM"); // HAVE_GETENTROPY
+    if (has_getentropy) expat_sources.append(b.allocator, "lib/random_getentropy.c") catch @panic("OOM");
     if (has_getrandom) expat_sources.append(b.allocator, "lib/random_getrandom.c") catch @panic("OOM");
     if (target.result.os.tag == .windows) expat_sources.append(b.allocator, "lib/random_rand_s.c") catch @panic("OOM");
 
@@ -144,6 +162,7 @@ pub fn build(b: *std.Build) void {
     if (min_size) expat.root_module.addCMacro("XML_MIN_SIZE", "1");
     if (char_type != .char) expat.root_module.addCMacro("XML_UNICODE", "1");
     if (char_type == .wchar_t) expat.root_module.addCMacro("XML_UNICODE_WCHAR_T", "1");
+    if (has_getentropy) expat.root_module.addCMacro("HAVE_GETENTROPY", "1");
     expat.root_module.addIncludePath(upstream.path("expat/lib"));
     expat.installHeader(upstream.path("expat/lib/expat.h"), "expat.h");
     expat.installHeader(upstream.path("expat/lib/expat_external.h"), "expat_external.h");
@@ -167,6 +186,7 @@ pub fn build(b: *std.Build) void {
     xmlwf.root_module.addIncludePath(upstream.path("expat/lib"));
     if (char_type != .char) xmlwf.root_module.addCMacro("XML_UNICODE", "1");
     if (char_type == .wchar_t) xmlwf.root_module.addCMacro("XML_UNICODE_WCHAR_T", "1");
+    if (has_getentropy) xmlwf.root_module.addCMacro("HAVE_GETENTROPY", "1");
     xmlwf.root_module.addCSourceFiles(.{
         .files = xmlwf_sources,
         .root = upstream.path("expat"),
@@ -209,6 +229,7 @@ pub fn build(b: *std.Build) void {
         });
         if (char_type != .char) exe.root_module.addCMacro("XML_UNICODE", "1");
         if (char_type == .wchar_t) exe.root_module.addCMacro("XML_UNICODE_WCHAR_T", "1");
+        if (has_getentropy) exe.root_module.addCMacro("HAVE_GETENTROPY", "1");
         exe.root_module.addCSourceFile(.{
             .file = upstream.path(b.fmt("expat/{s}", .{source})),
             .flags = if (need_short_char_arg) &.{"-fshort-wchar"} else &.{},
