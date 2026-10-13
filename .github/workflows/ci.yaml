@@ -35,5 +35,12 @@ jobs:
       - name: Build
         run: zig build --summary all
 
+      - name: Build (cross-compile BSDs)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          zig build -Dtarget=native-freebsd
+          zig build -Dtarget=native-netbsd
+          zig build -Dtarget=native-openbsd
+
       - name: Run Tests
         run: zig build test --summary all
