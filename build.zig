@@ -57,6 +57,21 @@ pub fn build(b: *std.Build) void {
         else => false,
     };
 
+    const has_arc4random_buf = switch (target.result.os.tag) {
+        .dragonfly,
+        .netbsd,
+        .freebsd,
+        .openbsd,
+        .macos,
+        .ios,
+        .tvos,
+        .watchos,
+        .visionos,
+        => true,
+        else => false,
+    };
+    const xml_dev_urandom = target.result.os.tag != .windows;
+
     const config_header = b.addConfigHeader(.{
         .style = .{ .cmake = upstream.path("expat/expat_config.h.cmake") },
         .include_path = "expat_config.h",
@@ -66,19 +81,7 @@ pub fn build(b: *std.Build) void {
             .big => 4321,
         }),
         .HAVE_ARC4RANDOM = null,
-        .HAVE_ARC4RANDOM_BUF = switch (target.result.os.tag) {
-            .dragonfly,
-            .netbsd,
-            .freebsd,
-            .openbsd,
-            .macos,
-            .ios,
-            .tvos,
-            .watchos,
-            .visionos,
-            => true,
-            else => false,
-        },
+        .HAVE_ARC4RANDOM_BUF = has_arc4random_buf,
         .HAVE_DLFCN_H = target.result.os.tag != .windows,
         .HAVE_FCNTL_H = true,
         .HAVE_GETPAGESIZE = target.result.os.tag.isBSD(),
@@ -103,12 +106,22 @@ pub fn build(b: *std.Build) void {
         .WORDS_BIGENDIAN = target.result.cpu.arch.endian() == .big,
         .XML_ATTR_INFO = attr_info,
         .XML_CONTEXT_BYTES = context_bytes,
-        .XML_DEV_URANDOM = target.result.os.tag != .windows,
+        .XML_DEV_URANDOM = xml_dev_urandom,
         .XML_DTD = dtd,
         .XML_GE = ge,
         .XML_NS = ns,
         .off_t = null,
     });
+
+    var expat_sources: std.ArrayList([]const u8) = .empty;
+    expat_sources.appendSlice(b.allocator, sources) catch @panic("OOM");
+
+    // if (has_arc4random) expat_sources.append(b.allocator, "lib/random_arc4random.c") catch @panic("OOM"); // HAVE_ARC4RANDOM
+    if (has_arc4random_buf) expat_sources.append(b.allocator, "lib/random_arc4random_buf.c") catch @panic("OOM");
+    if (xml_dev_urandom) expat_sources.append(b.allocator, "lib/random_dev_urandom.c") catch @panic("OOM");
+    expat_sources.append(b.allocator, "lib/random_getentropy.c") catch @panic("OOM"); // HAVE_GETENTROPY
+    if (has_getrandom) expat_sources.append(b.allocator, "lib/random_getrandom.c") catch @panic("OOM");
+    if (target.result.os.tag == .windows) expat_sources.append(b.allocator, "lib/random_rand_s.c") catch @panic("OOM");
 
     const expat = b.addLibrary(.{
         .linkage = linkage,
@@ -131,7 +144,7 @@ pub fn build(b: *std.Build) void {
     expat.installHeader(upstream.path("expat/lib/expat.h"), "expat.h");
     expat.installHeader(upstream.path("expat/lib/expat_external.h"), "expat_external.h");
     expat.root_module.addCSourceFiles(.{
-        .files = sources,
+        .files = expat_sources.items,
         .root = upstream.path("expat"),
         .flags = if (need_short_char_arg)
             &.{ "-std=c99", "-fno-sanitize=undefined", "-fshort-wchar" }
@@ -237,7 +250,7 @@ pub fn build(b: *std.Build) void {
         if (large_size) test_exe.root_module.addCMacro("XML_LARGE_SIZE", "1");
         if (min_size) test_exe.root_module.addCMacro("XML_MIN_SIZE", "1");
         test_exe.root_module.addCSourceFiles(.{
-            .files = sources,
+            .files = expat_sources.items,
             .root = upstream.path("expat"),
             .flags = if (need_short_char_arg) &.{ "-std=c99", "-fshort-wchar" } else &.{"-std=c99"},
         });
