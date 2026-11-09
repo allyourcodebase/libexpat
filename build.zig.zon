@@ -1,7 +1,7 @@
 .{
     .name = .libexpat,
     .version = "2.9.0",
-    .minimum_zig_version = "0.16.0",
+    .minimum_zig_version = "0.18.0-dev.954+60635c2bd",
     .dependencies = .{
         .libexpat = .{
             .url = "git+https://github.com/libexpat/libexpat.git?ref=R_2_9_0#a76b1174c1ea52abb639a4c69d52b630a8a106a2",
